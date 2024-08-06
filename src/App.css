@@ -37,6 +37,7 @@
   }
 }
 
+<<<<<<< HEAD
 .App {
   text-align: center;
 }
@@ -204,3 +205,5 @@ body, html {
   max-width: 80%; /* Limit the width of the text */
   margin: 0 auto; /* Center the text horizontally */
 }
+=======
+>>>>>>> Harsh-test

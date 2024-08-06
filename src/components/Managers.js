@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { get, post, remove } from "../utility/httpService";
 import ThreeDotsDropdown from '../sharedComponents/DropDown';
 
-const Driver = (props) => {
+const Managers = (props) => {
   const [form] = Form.useForm();
   const [AddModal, setAddModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -21,7 +21,7 @@ const Driver = (props) => {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [isAddMoreDisabled, setIsAddMoreDisabled] = useState(true);
   const [isAddDriverDisabled, setIsAddDriverDisabled] = useState(true);
-  const token = sessionStorage.getItem('accessToken'); // Retrieve the token from sessionStorage
+  const token = sessionStorage.getItem('token');
 
   const columns = [
     {
@@ -34,20 +34,24 @@ const Driver = (props) => {
       dataIndex: 'email',
     },
     {
-      title: 'Driver N',
-      dataIndex: 'driverN',
-      render: (_, record) => (record?.driverN ? record?.driverN : '-')
+      title: 'Phone',
+      dataIndex: 'phone',
+      render: (_, record) => (record?.phone ? record?.phone : '-'),
     },
     {
-      title: 'Truck N',
-      dataIndex: 'truckN',
-      render: (_, record) => (record?.truckN ? record?.truckN : '-')
+      title: 'Company',
+      dataIndex: 'company',
+      render: (_, record) => (
+       <>
+       {record?.company?.name ? record?.company?.name : '-'}
+       </>
+      ),
     },
     {
       title: 'Action',
       dataIndex: 'action',
       render: (_, record) => (
-       <ThreeDotsDropdown onDelete={() => null} onEdit={() => null} />
+        <ThreeDotsDropdown onDelete={() => null} onEdit={() => null} />
       ),
     },
   ];
@@ -63,7 +67,7 @@ const Driver = (props) => {
   useEffect(() => {
     // Set default form layout with one driver row when modal opens
     if (AddModal && formLayout.length === 0) {
-      setFormLayout([{ id: uuidv4(), email: '', truckN: '', driverN: '', name: '', role: 'driver' }]);
+      setFormLayout([{ id: uuidv4(), email: '', phone: '', name: '', role: 'driver' }]);
     }
   }, [AddModal]);
 
@@ -74,8 +78,7 @@ const Driver = (props) => {
       setFormValues(prev => ({
         ...prev,
         [`email_${item.id}`]: values[`email_${item.id}`] || '',
-        [`truckN${item.id}`]: values[`truckN${item.id}`] || '',
-        [`driverN${item.id}`]: values[`driverN${item.id}`] || '',
+        [`phone_${item.id}`]: values[`phone_${item.id}`] || '',
         [`name_${item.id}`]: values[`name_${item.id}`] || '',
         [`role_${item.id}`]: values[`role_${item.id}`] || 'driver',
       }));
@@ -83,7 +86,7 @@ const Driver = (props) => {
 
     setFormLayout([
       ...formLayout,
-      { id: uuidv4(), email: '', truckN: '', driverN: '', name: '', role: 'driver' }
+      { id: uuidv4(), email: '', phone: '', name: '', role: 'driver' }
     ]);
   };
 
@@ -95,20 +98,18 @@ const Driver = (props) => {
     const isAnyFieldEmpty = formLayout.some((item) => {
       const email = form.getFieldValue(`email_${item.id}`);
       const name = form.getFieldValue(`name_${item.id}`);
-      const truckN = form.getFieldValue(`truckN${item.id}`);
-      const driverN = form.getFieldValue(`driverN${item.id}`);
+      const phone = form.getFieldValue(`phone_${item.id}`);
       const role = form.getFieldValue(`role_${item.id}`);
-      return !email || !name || !truckN || !driverN || !role;
+      return !email || !name || !phone || !role;
     });
 
     setIsAddMoreDisabled(isAnyFieldEmpty);
     setIsAddDriverDisabled(formLayout.some((item) => {
       const email = form.getFieldValue(`email_${item.id}`);
       const name = form.getFieldValue(`name_${item.id}`);
-      const truckN = form.getFieldValue(`truckN${item.id}`);
-      const driverN = form.getFieldValue(`driverN${item.id}`);
+      const phone = form.getFieldValue(`phone_${item.id}`);
       const role = form.getFieldValue(`role_${item.id}`);
-      return !email || !name || !truckN || !driverN || !role;
+      return !email || !name || !phone ||  !role;
     }));
   };
 
@@ -116,9 +117,7 @@ const Driver = (props) => {
     formLayout.forEach((item) => {
       form.setFieldsValue({
         [`email_${item.id}`]: formValues[`email_${item.id}`] || '',
-        [`truckN${item.id}`]: formValues[`truckN${item.id}`] || '',
-        [`driverN${item.id}`]: formValues[`driverN${item.id}`] || '',
-        [`name_${item.id}`]: formValues[`name_${item.id}`] || '',
+        [`phone_${item.id}`]: formValues[`phone_${item.id}`] || '',
         [`role_${item.id}`]: formValues[`role_${item.id}`] || 'driver',
       });
     });
@@ -130,16 +129,15 @@ const Driver = (props) => {
 
       const addDriverPromises = formLayout.map((item) => {
         const email = values[`email_${item.id}`];
-        const truckN = values[`truckN${item.id}`];
-        const driverN = values[`driverN${item.id}`];
+        const phone = values[`phone${item.id}`];
         const name = values[`name_${item.id}`];
-        const role = 'driver';
+        const role =  'manager';
 
-        return post('/users', { email, truckN, driverN, name, role });
+        return post('/users', { email, phone, name, role });
       });
 
       await Promise.all(addDriverPromises);
-      message.success('Drivers added successfully!');
+      message.success('Manager added successfully!');
       fetchUsers(currentPage, pageSize);
       setAddModal(false);
       form.resetFields();
@@ -150,13 +148,13 @@ const Driver = (props) => {
       if (error.response && error.response.data) {
         message.error(`Error: ${error.response.data.message}`);
       } else {
-        message.error('An error occurred while adding drivers. Please try again.');
+        message.error('An error occurred while adding manager. Please try again.');
       }
     }
   };
   const fetchUsers = async (page = 1, limit = 10) => {
     try {
-      const response = await get('/users?role=driver', {
+      const response = await get('/users?role=manager', {
         page, limit 
       });
       const usersWithKeys = response.results.map(user => ({ ...user, key: user.id }));
@@ -202,13 +200,11 @@ const Driver = (props) => {
     }
   };
 
-  
-
   return (
     <div className={props.class} style={{ height: "100%" }}>
       <Header />
       <Col lg={24} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h3 style={{ fontSize: "25px", color: "#0B5676", letterSpacing: "1px", fontWeight: "600",  marginBottom: '10px' }}>Drivers</h3>
+        <h3 style={{ fontSize: "25px", color: "#0B5676", letterSpacing: "1px", fontWeight: "600",  marginBottom: '10px' }}>Managers</h3>
         <div style={{ display: "flex", gap: "6px" }}>
           {selectedRowKeys?.length > 0 && 
           <Button onClick={() => handleMultiRowDelete(selectedRowKeys)} style={{ background: "#1FA6E0", width: "100%", height: "40px", color: "#fff" }}>Delete</Button>}
@@ -220,8 +216,8 @@ const Driver = (props) => {
       !(getAllUsers.length > 0) ? 
       <Col lg={24} style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "80%" }}>
         <Col lg={10} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <div style={{ textAlign: "center", color: "#BBBBBB", fontWeight: "600" }}>Looks like you have no drivers yet.</div>
-          <div style={{ textAlign: "center", color: "#BBBBBB", fontWeight: "400" }}>Add a driver and we will send them an invite to join your team.</div>
+          <div style={{ textAlign: "center", color: "#BBBBBB", fontWeight: "600" }}>Looks like you have no managers yet.</div>
+          <div style={{ textAlign: "center", color: "#BBBBBB", fontWeight: "400" }}>Add a manager and we will send them an invite to join your team.</div>
           <Button onClick={() => setAddModal(true)} style={{ background: "#1FA6E0", width: "100%", height: "40px", color: "#fff" }}> + Add</Button>
         </Col>
       </Col>
@@ -247,7 +243,7 @@ const Driver = (props) => {
  : <Skeleton active/>
       }
       <Modal
-        title='Add Drivers'
+        title='Add Manager'
         open={AddModal}
         width={900}
         onCancel={() => setAddModal(false)}
@@ -266,32 +262,25 @@ const Driver = (props) => {
               {formLayout.map((item) => (
                 <div key={item.id} style={{ display: "flex", gap: "10px", alignItems: "end" }}>
                   <Form.Item
-                    name={`email_${item.id}`}
-                    label={<div style={{ color: "#BBBBBB" }}>Email</div>}
-                    rules={[{ required: true, type: 'email', message: 'Please enter a valid email' }]}
-                  >
-                    <Input style={{ width: "200px" }} placeholder="Enter Email" />
-                  </Form.Item>
-                  <Form.Item
-                    name={`driverN${item.id}`}
-                    label={<div style={{ color: "#BBBBBB" }}>Driver No.</div>}
-                    rules={[{ required: true, message: 'Please enter a Driver Number' }]}
-                  >
-                   <Input style={{ width: "200px" }} placeholder="Enter Driver Number" />
-                  </Form.Item>
-                  <Form.Item
-                    name={`truckN${item.id}`}
-                    label={<div style={{ color: "#BBBBBB" }}>Truck No.</div>}
-                    rules={[{ required: true, message: 'Please enter a Truck Number' }]}
-                  >
-                   <Input style={{ width: "200px" }} placeholder="Enter Truck Number" />
-                  </Form.Item>
-                  <Form.Item
                     name={`name_${item.id}`}
                     label={<div style={{ color: "#BBBBBB" }}>Name</div>}
                     rules={[{ required: true, message: 'Please enter name' }]}
                   >
-                    <Input style={{ width: "200px" }} placeholder="Enter Name" />
+                    <Input style={{ width: "250px" }} placeholder="Enter Name" />
+                  </Form.Item>
+                  <Form.Item
+                    name={`email_${item.id}`}
+                    label={<div style={{ color: "#BBBBBB" }}>Email</div>}
+                    rules={[{ required: true, type: 'email', message: 'Please enter a valid email' }]}
+                  >
+                    <Input style={{ width: "250px" }} placeholder="Enter Email" />
+                  </Form.Item>
+                  <Form.Item
+                    name={`phone_${item.id}`}
+                    label={<div style={{ color: "#BBBBBB" }}>Phone No</div>}
+                    rules={[{ required: true, message: 'Please enter phone no.' }]}
+                  >
+                    <Input style={{ width: "250px" }} placeholder="Enter Phone Number" />
                   </Form.Item>
                   <div style={{ width: "40px", height: "50px", cursor: "pointer" }} onClick={() => handleDeleteFormLayout(item.id)}>
                     <DeleteOutlined />
@@ -299,7 +288,7 @@ const Driver = (props) => {
                 </div>
               ))}
             </div>
-            <div style={{ display: "flex", alignItems:'center',  flexDirection: "column" }}>
+            <div style={{ display: "flex", flexDirection: "column" }}>
               <Button
                 onClick={addFormLayout}
                 style={{ marginBottom: "10px", width: "100%", height: "40px" }}
@@ -312,14 +301,14 @@ const Driver = (props) => {
                 style={{ background: "#1FA6E0", width: "100%", height: "40px", color: "#fff" }}
                 disabled={isAddDriverDisabled}
               >
-                Add Driver
+                Add Manager
               </Button>
             </div>
           </Form>
         </div>
       </Modal>
       <Modal
-        title='User Details'
+        title='Manager Details'
         open={viewModal}
         onCancel={() => setViewModal(false)}
         footer={null}
@@ -338,4 +327,4 @@ const Driver = (props) => {
   );
 };
 
-export default Driver;
+export default Managers;

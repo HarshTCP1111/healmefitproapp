@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { get, post, remove } from "../utility/httpService";
 import ThreeDotsDropdown from '../sharedComponents/DropDown';
 
-const Driver = (props) => {
+const Companies = (props) => {
   const [form] = Form.useForm();
   const [AddModal, setAddModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -26,28 +26,21 @@ const Driver = (props) => {
   const columns = [
     {
       title: 'Name',
-      dataIndex: 'name',
-      render: (text, record) => <a>{`${record.firstName} ${record.lastName}`}</a>,
+      dataIndex: 'name'
     },
     {
-      title: 'Email',
-      dataIndex: 'email',
+      title: 'Logo',
+      dataIndex: 'logo',
     },
     {
-      title: 'Driver N',
-      dataIndex: 'driverN',
-      render: (_, record) => (record?.driverN ? record?.driverN : '-')
-    },
-    {
-      title: 'Truck N',
-      dataIndex: 'truckN',
-      render: (_, record) => (record?.truckN ? record?.truckN : '-')
+      title: 'Type',
+      dataIndex: 'type',
     },
     {
       title: 'Action',
       dataIndex: 'action',
       render: (_, record) => (
-       <ThreeDotsDropdown onDelete={() => null} onEdit={() => null} />
+        <ThreeDotsDropdown onDelete={() => null} onEdit={() => null} />
       ),
     },
   ];
@@ -133,13 +126,13 @@ const Driver = (props) => {
         const truckN = values[`truckN${item.id}`];
         const driverN = values[`driverN${item.id}`];
         const name = values[`name_${item.id}`];
-        const role = 'driver';
+        const role = values[`role_${item.id}`];
 
         return post('/users', { email, truckN, driverN, name, role });
       });
 
       await Promise.all(addDriverPromises);
-      message.success('Drivers added successfully!');
+      message.success('Companies added successfully!');
       fetchUsers(currentPage, pageSize);
       setAddModal(false);
       form.resetFields();
@@ -150,18 +143,17 @@ const Driver = (props) => {
       if (error.response && error.response.data) {
         message.error(`Error: ${error.response.data.message}`);
       } else {
-        message.error('An error occurred while adding drivers. Please try again.');
+        message.error('An error occurred while adding companies. Please try again.');
       }
     }
   };
+
   const fetchUsers = async (page = 1, limit = 10) => {
     try {
-      const response = await get('/users?role=driver', {
+      const response = await get('/companies', {
         page, limit 
       });
-      const usersWithKeys = response.results.map(user => ({ ...user, key: user.id }));
-      setGetAllUsers(usersWithKeys);
-      setTotalResults(response.totalResults);
+      setTotalResults(response);
       setLoading(false);
     } catch (error) {
       setLoading(false);
@@ -202,13 +194,12 @@ const Driver = (props) => {
     }
   };
 
-  
-
+  console.log(totalResults)
   return (
     <div className={props.class} style={{ height: "100%" }}>
       <Header />
       <Col lg={24} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h3 style={{ fontSize: "25px", color: "#0B5676", letterSpacing: "1px", fontWeight: "600",  marginBottom: '10px' }}>Drivers</h3>
+        <h3 style={{ fontSize: "25px", color: "#0B5676", letterSpacing: "1px", fontWeight: "600" , marginBottom: '10px' }}>Companies</h3>
         <div style={{ display: "flex", gap: "6px" }}>
           {selectedRowKeys?.length > 0 && 
           <Button onClick={() => handleMultiRowDelete(selectedRowKeys)} style={{ background: "#1FA6E0", width: "100%", height: "40px", color: "#fff" }}>Delete</Button>}
@@ -217,29 +208,28 @@ const Driver = (props) => {
       </Col>
       {
       !loading ?
-      !(getAllUsers.length > 0) ? 
+      !(totalResults.length > 0) ? 
       <Col lg={24} style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "80%" }}>
         <Col lg={10} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <div style={{ textAlign: "center", color: "#BBBBBB", fontWeight: "600" }}>Looks like you have no drivers yet.</div>
-          <div style={{ textAlign: "center", color: "#BBBBBB", fontWeight: "400" }}>Add a driver and we will send them an invite to join your team.</div>
+          <div style={{ textAlign: "center", color: "#BBBBBB", fontWeight: "600" }}>Looks like you have no company yet.</div>
+          <div style={{ textAlign: "center", color: "#BBBBBB", fontWeight: "400" }}>Add a company and we will send them an invite to join your team.</div>
           <Button onClick={() => setAddModal(true)} style={{ background: "#1FA6E0", width: "100%", height: "40px", color: "#fff" }}> + Add</Button>
         </Col>
       </Col>
       :
-      // <div className='TableStyle'>
       <Table
-      rowSelection={rowSelection}
-      columns={columns}
-      dataSource={getAllUsers}
-      pagination={{
-        current: currentPage,
-        pageSize: pageSize,
-        total: totalResults,
-        onChange: (page, pageSize) => handleTableChange({ current: page, pageSize }),
-      }}
-      style={{ height: "60vh", overflowY: "auto" }}
-      onChange={handleTableChange}
-      className="fixed-pagination"
+        rowSelection={rowSelection}
+        columns={columns}
+        dataSource={totalResults}
+        pagination={{
+            current: currentPage,
+            pageSize: pageSize,
+            total: totalResults,
+            onChange: (page, pageSize) => handleTableChange({ current: page, pageSize }),
+        }}
+        style={{ height: "60vh", overflowY: "auto" }}
+        onChange={handleTableChange}
+        className="fixed-pagination"
     />
     
     // </div>
@@ -247,7 +237,7 @@ const Driver = (props) => {
  : <Skeleton active/>
       }
       <Modal
-        title='Add Drivers'
+        title='Add Company'
         open={AddModal}
         width={900}
         onCancel={() => setAddModal(false)}
@@ -270,28 +260,36 @@ const Driver = (props) => {
                     label={<div style={{ color: "#BBBBBB" }}>Email</div>}
                     rules={[{ required: true, type: 'email', message: 'Please enter a valid email' }]}
                   >
-                    <Input style={{ width: "200px" }} placeholder="Enter Email" />
+                    <Input style={{ width: "150px" }} placeholder="Enter Email" />
                   </Form.Item>
-                  <Form.Item
+                  {/* <Form.Item
                     name={`driverN${item.id}`}
                     label={<div style={{ color: "#BBBBBB" }}>Driver No.</div>}
                     rules={[{ required: true, message: 'Please enter a Driver Number' }]}
                   >
-                   <Input style={{ width: "200px" }} placeholder="Enter Driver Number" />
+                   <Input style={{ width: "150px" }} placeholder="Enter Driver Number" />
                   </Form.Item>
                   <Form.Item
                     name={`truckN${item.id}`}
                     label={<div style={{ color: "#BBBBBB" }}>Truck No.</div>}
                     rules={[{ required: true, message: 'Please enter a Truck Number' }]}
                   >
-                   <Input style={{ width: "200px" }} placeholder="Enter Truck Number" />
-                  </Form.Item>
+                   <Input style={{ width: "150px" }} placeholder="Enter Truck Number" />
+                  </Form.Item> */}
                   <Form.Item
                     name={`name_${item.id}`}
                     label={<div style={{ color: "#BBBBBB" }}>Name</div>}
                     rules={[{ required: true, message: 'Please enter name' }]}
                   >
-                    <Input style={{ width: "200px" }} placeholder="Enter Name" />
+                    <Input style={{ width: "150px" }} placeholder="Enter Name" />
+                  </Form.Item>
+                  <Form.Item
+                    name={`role_${item.id}`}
+                    label={<div style={{ color: "#BBBBBB" }}>Role</div>}
+                    rules={[{ required: true, message: 'Please enter role' }]}
+                    initialValue='driver'
+                  >
+                    <Input style={{ width: "150px" }} placeholder="Enter Role" />
                   </Form.Item>
                   <div style={{ width: "40px", height: "50px", cursor: "pointer" }} onClick={() => handleDeleteFormLayout(item.id)}>
                     <DeleteOutlined />
@@ -299,7 +297,7 @@ const Driver = (props) => {
                 </div>
               ))}
             </div>
-            <div style={{ display: "flex", alignItems:'center',  flexDirection: "column" }}>
+            <div style={{ display: "flex", flexDirection: "column" }}>
               <Button
                 onClick={addFormLayout}
                 style={{ marginBottom: "10px", width: "100%", height: "40px" }}
@@ -312,7 +310,7 @@ const Driver = (props) => {
                 style={{ background: "#1FA6E0", width: "100%", height: "40px", color: "#fff" }}
                 disabled={isAddDriverDisabled}
               >
-                Add Driver
+                Add Company
               </Button>
             </div>
           </Form>
@@ -338,4 +336,4 @@ const Driver = (props) => {
   );
 };
 
-export default Driver;
+export default Companies;
